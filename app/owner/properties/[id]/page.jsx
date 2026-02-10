@@ -582,12 +582,6 @@ export default async function PropertyDetailPage({ params }) {
                     {property.status || "Available"}
                   </span>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Property ID</p>
-                  <p className="font-mono text-xs text-gray-900 break-all bg-gray-50 p-2 rounded">
-                    {property.id}
-                  </p>
-                </div>
               </div>
             </div>
           </div>
