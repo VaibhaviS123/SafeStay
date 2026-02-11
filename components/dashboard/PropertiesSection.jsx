@@ -283,7 +283,7 @@ function PropertyCard({ property }) {
             )}
           </div>
           <a
-            href={`/properties/${property.id}`}
+            href={`/guest/properties/${property.id}`}
             className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-95"
           >
             Book Now
