@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function EditPropertyForm({ property }) {
   const supabase = createClient();
-
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);

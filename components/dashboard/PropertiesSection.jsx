@@ -1,329 +1,298 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useState, useMemo } from 'react';
 
 export default function PropertiesSection({ properties, cities, areas }) {
-  const [filteredProperties, setFilteredProperties] = useState(properties);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCity, setSelectedCity] = useState("");
-  const [selectedArea, setSelectedArea] = useState("");
+  const [search, setSearch] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedArea, setSelectedArea] = useState('');
 
-  useEffect(() => {
-    filterProperties();
-  }, [searchQuery, selectedCity, selectedArea, properties]);
+  const filtered = useMemo(() => {
+    return properties.filter(p => {
+      const q = search.toLowerCase();
+      const matchSearch = !search ||
+        p.name?.toLowerCase().includes(q) ||
+        p.city?.toLowerCase().includes(q) ||
+        p.area?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q);
+      const matchCity = !selectedCity || p.city === selectedCity;
+      const matchArea = !selectedArea || p.area === selectedArea;
+      return matchSearch && matchCity && matchArea;
+    });
+  }, [properties, search, selectedCity, selectedArea]);
 
-  const filterProperties = () => {
-    let filtered = [...properties];
+  const filteredAreas = useMemo(() =>
+    selectedCity
+      ? areas.filter(a => properties.some(p => p.area === a && p.city === selectedCity))
+      : areas,
+    [areas, properties, selectedCity]
+  );
 
-    // Filter by search query (name, city, area, description)
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (property) =>
-          property.name?.toLowerCase().includes(query) ||
-          property.city?.toLowerCase().includes(query) ||
-          property.area?.toLowerCase().includes(query) ||
-          property.description?.toLowerCase().includes(query) ||
-          property.address?.toLowerCase().includes(query)
-      );
-    }
-
-    // Filter by selected city
-    if (selectedCity) {
-      filtered = filtered.filter((property) => property.city === selectedCity);
-    }
-
-    // Filter by selected area
-    if (selectedArea) {
-      filtered = filtered.filter((property) => property.area === selectedArea);
-    }
-
-    setFilteredProperties(filtered);
-  };
-
-  const clearFilters = () => {
-    setSearchQuery("");
-    setSelectedCity("");
-    setSelectedArea("");
-  };
-
-  const hasActiveFilters = searchQuery || selectedCity || selectedArea;
+  const clearFilters = () => { setSearch(''); setSelectedCity(''); setSelectedArea(''); };
+  const hasFilters = search || selectedCity || selectedArea;
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-      {/* Section Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Browse Properties</h2>
-        <p className="text-gray-600">Find your perfect stay</p>
-      </div>
+    <div className="space-y-6">
 
-      {/* Search and Filter Section */}
-      <div className="mb-6 p-5 bg-gray-50 rounded-xl">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Search Bar */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Search Properties
-            </label>
-            <div className="relative">
+      {/* ── Search Bar ── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Main search row */}
+        <div className="flex items-center gap-0 divide-x divide-gray-100">
+
+          {/* Text search */}
+          <div className="flex-1 flex items-center gap-3 px-5 py-4">
+            <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <div className="flex-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Search</label>
               <input
                 type="text"
-                placeholder="Search by name, city, or area..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Property name, location..."
+                className="w-full text-sm text-gray-900 placeholder-gray-400 bg-transparent border-0 outline-none"
               />
-              <svg
-                className="absolute left-3 top-3.5 w-5 h-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            </div>
+            {search && (
+              <button onClick={() => setSearch('')} className="text-gray-300 hover:text-gray-500 transition">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* City picker */}
+          <div className="flex items-center gap-3 px-5 py-4 min-w-[170px]">
+            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <div className="flex-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">City</label>
+              <select
+                value={selectedCity}
+                onChange={e => { setSelectedCity(e.target.value); setSelectedArea(''); }}
+                className="w-full text-sm text-gray-700 bg-transparent border-0 outline-none appearance-none cursor-pointer"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+                <option value="">All cities</option>
+                {cities.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
           </div>
 
-          {/* City Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Filter by City
-            </label>
-            <select
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
-            >
-              <option value="">All Cities</option>
-              {cities.sort().map((city) => (
-                <option key={city} value={city}>
-                  {city}
-                </option>
-              ))}
-            </select>
+          {/* Area picker */}
+          <div className="flex items-center gap-3 px-5 py-4 min-w-[170px]">
+            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+            <div className="flex-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Area</label>
+              <select
+                value={selectedArea}
+                onChange={e => setSelectedArea(e.target.value)}
+                className="w-full text-sm text-gray-700 bg-transparent border-0 outline-none appearance-none cursor-pointer"
+              >
+                <option value="">All areas</option>
+                {filteredAreas.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
           </div>
 
-          {/* Area Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Filter by Area
-            </label>
-            <select
-              value={selectedArea}
-              onChange={(e) => setSelectedArea(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
-            >
-              <option value="">All Areas</option>
-              {areas.sort().map((area) => (
-                <option key={area} value={area}>
-                  {area}
-                </option>
-              ))}
-            </select>
+          {/* Search button */}
+          <div className="px-4 py-3">
+            <button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-3 text-sm font-semibold transition-colors flex items-center gap-2 shadow-sm">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              Search
+            </button>
           </div>
         </div>
 
-        {/* Active Filters & Clear Button */}
-        {hasActiveFilters && (
-          <div className="mt-4 flex items-center justify-between flex-wrap gap-3">
-            <div className="flex flex-wrap gap-2">
-              {searchQuery && (
-                <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">
-                  Search: "{searchQuery}"
-                </span>
-              )}
-              {selectedCity && (
-                <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">
-                  City: {selectedCity}
-                </span>
-              )}
-              {selectedArea && (
-                <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">
-                  Area: {selectedArea}
-                </span>
-              )}
-            </div>
-            <button
-              onClick={clearFilters}
-              className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Clear all filters
+        {/* Active filter tags + result count */}
+        {hasFilters && (
+          <div className="flex items-center gap-2 px-5 py-3 bg-gray-50 border-t border-gray-100 flex-wrap">
+            <span className="text-xs text-gray-500 font-medium">
+              <span className="text-blue-600 font-bold">{filtered.length}</span> result{filtered.length !== 1 ? 's' : ''}
+            </span>
+            <div className="w-px h-4 bg-gray-200" />
+            {search && (
+              <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full">
+                🔍 {search}
+                <button onClick={() => setSearch('')} className="ml-1 hover:text-blue-900">×</button>
+              </span>
+            )}
+            {selectedCity && (
+              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-medium px-2.5 py-1 rounded-full">
+                📍 {selectedCity}
+                <button onClick={() => { setSelectedCity(''); setSelectedArea(''); }} className="ml-1 hover:text-emerald-900">×</button>
+              </span>
+            )}
+            {selectedArea && (
+              <span className="inline-flex items-center gap-1 bg-violet-100 text-violet-700 text-xs font-medium px-2.5 py-1 rounded-full">
+                🗺 {selectedArea}
+                <button onClick={() => setSelectedArea('')} className="ml-1 hover:text-violet-900">×</button>
+              </span>
+            )}
+            <button onClick={clearFilters} className="ml-auto text-xs text-red-500 hover:text-red-700 font-semibold hover:underline transition">
+              Clear all
             </button>
           </div>
         )}
       </div>
 
-      {/* Results Count */}
-      <div className="mb-4">
-        <p className="text-gray-600">
-          Showing <span className="font-semibold text-gray-900">{filteredProperties.length}</span>{" "}
-          {filteredProperties.length === 1 ? "property" : "properties"}
-        </p>
-      </div>
-
-      {/* Properties Grid */}
-      {filteredProperties.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProperties.map((property) => (
-            <div
-              key={property.id}
-              className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition group"
-            >
-              {/* Property Image */}
-              <div className="relative h-48 bg-gradient-to-br from-indigo-500 to-purple-600 overflow-hidden">
-                {property.image_url ? (
-                  <img
-                    src={property.image_url}
-                    alt={property.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <svg
-                      className="w-16 h-16 text-white opacity-50"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                      />
-                    </svg>
-                  </div>
-                )}
-                
-                {/* Status Badge */}
-                {property.status && (
-                  <div className="absolute top-3 right-3">
-                    <span className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-semibold shadow-lg">
-                      Available
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Property Details */}
-              <div className="p-5">
-                <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">
-                  {property.name}
-                </h3>
-
-                {/* Location */}
-                <div className="flex items-center gap-2 text-gray-600 mb-3">
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  <span className="text-sm line-clamp-1">
-                    {property.area}, {property.city}
-                  </span>
-                </div>
-
-                {/* Description */}
-                {property.description && (
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {property.description}
-                  </p>
-                )}
-
-                {/* Property Features */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {property.bedrooms && (
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                      </svg>
-                      {property.bedrooms} Bed
-                    </span>
-                  )}
-                  {property.bathrooms && (
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">
-                      {property.bathrooms} Bath
-                    </span>
-                  )}
-                  {property.property_type && (
-                    <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-medium capitalize">
-                      {property.property_type}
-                    </span>
-                  )}
-                </div>
-
-                {/* Price and CTA */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-             {property.price_per_night ? (
-  <div>
-    <span className="text-2xl font-bold text-gray-900">
-      ₹{property.price_per_night}
-    </span>
-    <span className="text-gray-500 text-sm">/night</span>
-  </div>
-) : (
-  <div className="text-gray-500 text-sm">Contact for pricing</div>
-)}
-                  <Link
-                    href={`/guest/properties/${property.id}`}
-                    className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition text-sm shadow-md hover:shadow-lg"
-                  >
-                    Book Now
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* ── Grid ── */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-20 bg-white rounded-2xl border border-gray-100">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-1">No properties found</h3>
+          <p className="text-gray-400 text-sm mb-4">Try adjusting your search or filters</p>
+          <button onClick={clearFilters} className="text-sm text-blue-600 font-semibold hover:underline">Clear all filters</button>
         </div>
       ) : (
-        <div className="text-center py-16 bg-gray-50 rounded-xl">
-          <svg
-            className="w-20 h-20 text-gray-300 mx-auto mb-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No properties found</h3>
-          <p className="text-gray-500 mb-6">
-            {hasActiveFilters
-              ? "Try adjusting your search filters to see more results."
-              : "No properties available at the moment."}
-          </p>
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 transition"
-            >
-              Clear All Filters
-            </button>
-          )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map(property => <PropertyCard key={property.id} property={property} />)}
         </div>
       )}
+    </div>
+  );
+}
+
+function PropertyCard({ property }) {
+  const [imgError, setImgError] = useState(false);
+  const image = !imgError && (property.image_url || property.property_images?.[0]?.image_url);
+  const price = property.price_per_night || property.price;
+
+  const typeEmoji = { villa: '🏡', apartment: '🏢', hostel: '🏨', resort: '🌴', cottage: '🏠' };
+  const emoji = typeEmoji[property.property_type?.toLowerCase()] || '🏠';
+
+  // Gradient fallbacks per property type
+  const fallbackGradients = {
+    villa: 'from-emerald-400 to-teal-600',
+    apartment: 'from-blue-400 to-indigo-600',
+    hostel: 'from-orange-400 to-pink-500',
+    resort: 'from-cyan-400 to-blue-500',
+    cottage: 'from-amber-400 to-orange-500',
+  };
+  const fallback = fallbackGradients[property.property_type?.toLowerCase()] || 'from-blue-400 to-indigo-500';
+
+  return (
+    <div className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl border border-gray-100 transition-all duration-300 hover:-translate-y-1 flex flex-col">
+
+      {/* ── Image ── */}
+      <div className="relative h-52 overflow-hidden">
+        {image ? (
+          <img
+            src={image}
+            alt={property.name}
+            onError={() => setImgError(true)}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className={`w-full h-full bg-gradient-to-br ${fallback} flex items-center justify-center`}>
+            <span className="text-5xl">{emoji}</span>
+          </div>
+        )}
+
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Available badge */}
+        <div className="absolute top-3 left-3">
+          <span className="inline-flex items-center gap-1.5 bg-white/90 backdrop-blur-sm text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full shadow">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Available
+          </span>
+        </div>
+
+        {/* Type badge */}
+        {property.property_type && (
+          <div className="absolute top-3 right-3">
+            <span className="bg-black/40 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full capitalize">
+              {emoji} {property.property_type}
+            </span>
+          </div>
+        )}
+
+        {/* Price on hover */}
+        <div className="absolute bottom-0 inset-x-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+          <div className="text-white font-bold text-lg">
+            {price ? <>₹{Number(price).toLocaleString()}<span className="text-sm font-normal text-white/70">/night</span></> : 'Contact for pricing'}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Body ── */}
+      <div className="p-5 flex flex-col flex-1">
+
+        {/* Name & location */}
+        <div className="mb-3">
+          <h3 className="font-bold text-gray-900 text-base leading-snug line-clamp-1 group-hover:text-blue-600 transition-colors mb-1">
+            {property.name}
+          </h3>
+          {(property.area || property.city) && (
+            <p className="text-gray-400 text-xs flex items-center gap-1">
+              <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              </svg>
+              {[property.area, property.city].filter(Boolean).join(', ')}
+            </p>
+          )}
+        </div>
+
+        {/* Description */}
+        {property.description && (
+          <p className="text-gray-500 text-xs line-clamp-2 mb-3 flex-1 leading-relaxed">{property.description}</p>
+        )}
+
+        {/* Specs */}
+        <div className="flex items-center gap-3 text-xs text-gray-400 mb-4 flex-wrap">
+          {property.bedrooms && (
+            <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg">
+              🛏 {property.bedrooms} {property.bedrooms === 1 ? 'Bed' : 'Beds'}
+            </span>
+          )}
+          {property.bathrooms && (
+            <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg">
+              🚿 {property.bathrooms} {property.bathrooms === 1 ? 'Bath' : 'Baths'}
+            </span>
+          )}
+          {property.max_guests && (
+            <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg">
+              👥 {property.max_guests} guests
+            </span>
+          )}
+        </div>
+
+        {/* Price + CTA */}
+        <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
+          <div>
+            {price ? (
+              <>
+                <span className="text-xl font-bold text-gray-900">₹{Number(price).toLocaleString()}</span>
+                <span className="text-xs text-gray-400 ml-1">/night</span>
+              </>
+            ) : (
+              <span className="text-sm text-gray-400 italic">Contact for pricing</span>
+            )}
+          </div>
+          <a
+            href={`/properties/${property.id}`}
+            className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-95"
+          >
+            Book Now
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

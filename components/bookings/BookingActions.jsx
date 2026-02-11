@@ -24,7 +24,6 @@ export default function BookingActions({ bookingId }) {
         return;
       }
 
-      // Refresh server component data
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -34,24 +33,24 @@ export default function BookingActions({ bookingId }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-      <h3 className="text-lg font-bold text-gray-900 mb-4">
-        Actions (Pending Booking)
+    <div className="bg-white rounded-lg border border-gray-200 p-5">
+      <h3 className="text-sm font-semibold text-gray-900 mb-4">
+        Booking Actions
       </h3>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-sm text-red-800">{error}</p>
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="flex gap-3">
         <button
           onClick={() => handleUpdate("confirmed")}
           disabled={loading}
-          className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition disabled:opacity-50"
+          className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? "Processing..." : "Approve Booking"}
+          {loading ? "Processing..." : "Approve"}
         </button>
 
         <button
@@ -61,9 +60,9 @@ export default function BookingActions({ bookingId }) {
             }
           }}
           disabled={loading}
-          className="w-full px-6 py-3 bg-white border-2 border-red-300 text-red-700 rounded-xl font-semibold hover:bg-red-50 transition disabled:opacity-50"
+          className="flex-1 px-4 py-2.5 bg-white border border-red-300 text-red-700 rounded-lg text-sm font-medium hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Reject Booking
+          Reject
         </button>
       </div>
     </div>
