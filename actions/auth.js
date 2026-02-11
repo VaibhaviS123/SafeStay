@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 
 export async function registerUser(formData) {
@@ -15,13 +16,14 @@ export async function registerUser(formData) {
     return { error: "All fields are required" };
   }
 
-  // Create auth user
+  // Create auth user (without metadata since we're not using trigger)
   const { data, error: authError } = await supabase.auth.signUp({
     email,
     password,
   });
 
   if (authError) {
+    console.error("Auth error:", authError);
     return { error: authError.message };
   }
 
@@ -29,22 +31,31 @@ export async function registerUser(formData) {
     return { error: "Signup failed" };
   }
 
-  // Use UPSERT instead of INSERT to handle duplicates
-  const { error: profileError } = await supabase
-    .from("users")
-    .upsert(
-      {
-        id: data.user.id,
-        full_name: fullName,
-        role,
-      },
-      {
-        onConflict: 'id'
+  // Use service role to bypass RLS and insert user profile
+  const supabaseAdmin = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
       }
-    );
+    }
+  );
+
+  // Insert into users table with admin client
+  const { error: profileError } = await supabaseAdmin
+    .from("users")
+    .insert({
+      id: data.user.id,
+      full_name: fullName,
+      email: email,
+      role: role || 'guest',
+    });
 
   if (profileError) {
-    return { error: profileError.message };
+    console.error("Profile error:", profileError);
+    return { error: `Database error: ${profileError.message}` };
   }
 
   return { success: true };
@@ -84,7 +95,6 @@ export async function loginUser(formData) {
     return { error: "Failed to fetch user data" };
   }
 
-  // Redirect based on role
   return { 
     success: true, 
     role: userData.role 

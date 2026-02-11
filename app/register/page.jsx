@@ -48,7 +48,6 @@ export default function RegisterPage() {
 
   return (
     <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-50 px-6 relative overflow-hidden">
-      {/* Animated background blobs */}
       <motion.div
         animate={{
           scale: [1, 1.2, 1],
@@ -80,7 +79,6 @@ export default function RegisterPage() {
         animate="visible"
         className="w-full max-w-md bg-white/90 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl px-8 py-10 relative z-10"
       >
-        {/* Header */}
         <motion.div variants={itemVariants} className="text-center mb-8">
           <motion.div
             initial={{ scale: 0 }}
@@ -117,7 +115,6 @@ export default function RegisterPage() {
           </p>
         </motion.div>
 
-        {/* Form */}
         <form action={handleSubmit} className="space-y-5">
           <motion.div variants={itemVariants}>
             <input
@@ -191,7 +188,6 @@ export default function RegisterPage() {
           </motion.button>
         </form>
 
-        {/* Footer */}
         <motion.p
           variants={itemVariants}
           className="text-sm text-center text-gray-600 mt-6"
