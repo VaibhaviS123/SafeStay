@@ -51,6 +51,21 @@ export async function guestCheckIn(bookingId) {
       return { success: false, error: `Cannot check in - booking status is "${booking.status}" (must be confirmed)` };
     }
 
+    // Date validation for check-in
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to midnight for date-only comparison
+    
+    const checkInDate = new Date(booking.check_in);
+    checkInDate.setHours(0, 0, 0, 0);
+
+    if (today < checkInDate) {
+      const checkInDateStr = checkInDate.toLocaleDateString();
+      return { 
+        success: false, 
+        error: `Cannot check in yet - check-in date is ${checkInDateStr}` 
+      };
+    }
+
     // Update the booking
     const now = new Date().toISOString();
     const { data: updated, error: updateError } = await supabase
@@ -115,6 +130,33 @@ export async function guestCheckOut(bookingId) {
       return { success: false, error: `Cannot check out - booking status is "${booking.status}" (must be checked_in)` };
     }
 
+    // Date validation for check-out
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const checkInDate = new Date(booking.check_in);
+    checkInDate.setHours(0, 0, 0, 0);
+    
+    const checkOutDate = new Date(booking.check_out);
+    checkOutDate.setHours(0, 0, 0, 0);
+
+    // Must be after check-in date
+    if (today <= checkInDate) {
+      return { 
+        success: false, 
+        error: "Cannot check out on or before check-in date" 
+      };
+    }
+
+    // Must be on or before check-out date
+    if (today > checkOutDate) {
+      const checkOutDateStr = checkOutDate.toLocaleDateString();
+      return { 
+        success: false, 
+        error: `Check-out date has passed (${checkOutDateStr})` 
+      };
+    }
+
     const now = new Date().toISOString();
     const { error: updateError } = await supabase
       .from("bookings")
@@ -138,114 +180,5 @@ export async function guestCheckOut(bookingId) {
   } catch (err) {
     console.error("guestCheckOut unexpected error:", err);
     return { success: false, error: err.message || "Unexpected error occurred" };
-  }
-}
-
-export async function ownerCheckInGuest(bookingId) {
-  try {
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) return { success: false, error: "Not authenticated" };
-
-    const { data: bookings, error: fetchError } = await supabase
-      .from("bookings")
-      .select("*")
-      .eq("id", bookingId);
-
-    if (fetchError || !bookings?.length) {
-      return { success: false, error: "Booking not found" };
-    }
-
-    const booking = bookings[0];
-
-    // Verify owner owns this property
-    const { data: properties } = await supabase
-      .from("properties")
-      .select("owner_id")
-      .eq("id", booking.property_id);
-
-    if (!properties?.length || properties[0].owner_id !== user.id) {
-      return { success: false, error: "You don't own this property" };
-    }
-
-    const status = booking.status?.trim().toLowerCase();
-    if (status !== "confirmed") {
-      return { success: false, error: `Cannot check in - status is "${booking.status}"` };
-    }
-
-    const now = new Date().toISOString();
-    const { error: updateError } = await supabase
-      .from("bookings")
-      .update({ status: "checked_in", checked_in_at: now })
-      .eq("id", bookingId);
-
-    if (updateError) {
-      return { success: false, error: `Database error: ${updateError.message}` };
-    }
-
-    revalidatePath("/owner/bookings");
-    revalidatePath(`/owner/bookings/${bookingId}`);
-
-    return { success: true };
-  } catch (err) {
-    return { success: false, error: err.message || "Unexpected error" };
-  }
-}
-
-export async function ownerCheckOutGuest(bookingId) {
-  try {
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) return { success: false, error: "Not authenticated" };
-
-    const { data: bookings, error: fetchError } = await supabase
-      .from("bookings")
-      .select("*")
-      .eq("id", bookingId);
-
-    if (fetchError || !bookings?.length) {
-      return { success: false, error: "Booking not found" };
-    }
-
-    const booking = bookings[0];
-
-    const { data: properties } = await supabase
-      .from("properties")
-      .select("owner_id")
-      .eq("id", booking.property_id);
-
-    if (!properties?.length || properties[0].owner_id !== user.id) {
-      return { success: false, error: "You don't own this property" };
-    }
-
-    const status = booking.status?.trim().toLowerCase();
-    if (status !== "checked_in") {
-      return { success: false, error: `Cannot check out - status is "${booking.status}"` };
-    }
-
-    const now = new Date().toISOString();
-    const { error: updateError } = await supabase
-      .from("bookings")
-      .update({ status: "completed", checked_out_at: now })
-      .eq("id", bookingId);
-
-    if (updateError) {
-      return { success: false, error: `Database error: ${updateError.message}` };
-    }
-
-    revalidatePath("/owner/bookings");
-    revalidatePath(`/owner/bookings/${bookingId}`);
-
-    return { success: true };
-  } catch (err) {
-    return { success: false, error: err.message || "Unexpected error" };
   }
 }

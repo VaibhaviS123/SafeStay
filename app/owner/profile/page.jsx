@@ -1,4 +1,3 @@
-// app/profile/page.js - SIMPLE VERSION THAT WORKS
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -43,7 +42,6 @@ export default async function ProfilePage() {
     );
   }
 
-  // If no user data, show message
   if (!userData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">

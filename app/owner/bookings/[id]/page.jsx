@@ -54,12 +54,6 @@ export default async function BookingDetailsPage({ params }) {
     .eq("id", bookingData.user_id)
     .single();
 
-  // Detailed logging for debugging
-  console.log("=== GUEST DATA FETCH DEBUG ===");
-  console.log("Booking user_id:", bookingData.user_id);
-  console.log("Guest data:", guestData);
-  console.log("Guest error:", guestError);
-  console.log("Email value:", guestData?.email);
   
   // Create final guest data with fallback
   const finalGuestData = guestData || {
@@ -69,8 +63,6 @@ export default async function BookingDetailsPage({ params }) {
     role: "guest",
     created_at: bookingData.created_at
   };
-  
-  console.log("Final guest data:", finalGuestData);
 
   const propertyData = bookingData.properties;
 
@@ -93,8 +85,7 @@ export default async function BookingDetailsPage({ params }) {
   };
 
   const nights = calculateNights(bookingData.check_in, bookingData.check_out);
-  
-  // Calculate total price - with proper fallback
+
   const pricePerNight = propertyData?.price_per_night || 0;
   const calculatedTotal = pricePerNight * nights;
   const totalPrice = bookingData.total_price || bookingData.total_amount || calculatedTotal;

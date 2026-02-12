@@ -101,6 +101,44 @@ export async function loginUser(formData) {
   };
 }
 
+export async function changePassword(formData) {
+  const supabase = await createClient();
+
+  const email = formData.get("email");
+  const currentPassword = formData.get("currentPassword");
+  const newPassword = formData.get("newPassword");
+
+  if (!email || !currentPassword || !newPassword) {
+    return { error: "All fields are required" };
+  }
+
+  if (newPassword.length < 6) {
+    return { error: "New password must be at least 6 characters" };
+  }
+
+  // First, verify the current password by attempting to sign in
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password: currentPassword,
+  });
+
+  if (signInError) {
+    return { error: "Current password is incorrect" };
+  }
+
+  // If current password is correct, update to new password
+  const { error: updateError } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (updateError) {
+    console.error("Update password error:", updateError);
+    return { error: updateError.message };
+  }
+
+  return { success: true };
+}
+
 export async function logoutUser() {
   const supabase = await createClient();
   await supabase.auth.signOut();

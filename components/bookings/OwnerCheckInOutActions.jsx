@@ -1,67 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ownerCheckInGuest, ownerCheckOutGuest } from "@/actions/checkin-checkout";
-
 export default function OwnerCheckInOutActions({ bookingId, status, checkInDate, checkOutDate }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [currentStatus, setCurrentStatus] = useState(status);
-
-  const normalizedStatus = currentStatus?.trim().toLowerCase();
-
-  // Date validation
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  const checkIn = new Date(checkInDate);
-  checkIn.setHours(0, 0, 0, 0);
-  
-  const checkOut = new Date(checkOutDate);
-  checkOut.setHours(0, 0, 0, 0);
-  
-  const isCheckInDate = today.getTime() === checkIn.getTime();
-  const isAfterCheckIn = today.getTime() > checkIn.getTime();
-
-  // Can only check in on the exact check-in date
-  const canCheckIn = normalizedStatus === "confirmed" && isCheckInDate;
-  
-  // Can only check out on or after check-in date and on or before check-out date
-  const canCheckOut = normalizedStatus === "checked_in" && isAfterCheckIn && today.getTime() <= checkOut.getTime();
-
-  const handleCheckIn = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await ownerCheckInGuest(bookingId);
-      if (result.success) {
-        setCurrentStatus("checked_in");
-      } else {
-        setError(result.error || "Failed to check in guest");
-      }
-    } catch (err) {
-      setError(err.message || "Unexpected error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCheckOut = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await ownerCheckOutGuest(bookingId);
-      if (result.success) {
-        setCurrentStatus("completed");
-      } else {
-        setError(result.error || "Failed to check out guest");
-      }
-    } catch (err) {
-      setError(err.message || "Unexpected error");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const normalizedStatus = status?.trim().toLowerCase();
 
   if (normalizedStatus === "completed") {
     return (
@@ -75,37 +15,33 @@ export default function OwnerCheckInOutActions({ bookingId, status, checkInDate,
     );
   }
 
-  // If not confirmed or checked_in status, don't show anything
-  if (normalizedStatus !== "confirmed" && normalizedStatus !== "checked_in") {
-    return null;
-  }
-
+  // Show read-only status for owners
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-5">
+    <div className="bg-gray-50 rounded-lg border border-gray-200 p-5">
       <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+        <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        Check-In / Check-Out
+        Check-In / Check-Out Status
       </h3>
 
-      {/* Error */}
-      {error && (
-        <div className="mb-4 flex items-start gap-2 p-3 bg-red-50 rounded-lg border border-red-200">
-          <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span className="text-sm text-red-700">{error}</span>
-        </div>
-      )}
-
-      {/* Current Status */}
-      {normalizedStatus === "checked_in" && (
-        <div className="mb-4 flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-          <span className="text-sm font-medium text-blue-700">Guest is currently checked in</span>
-        </div>
-      )}
+      {/* Current Status Badge */}
+      <div className="mb-4 flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+        {normalizedStatus === "confirmed" && (
+          <>
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-medium text-blue-700">Booking Confirmed - Awaiting Guest Check-In</span>
+          </>
+        )}
+        {normalizedStatus === "checked_in" && (
+          <>
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span className="text-sm font-medium text-green-700">Guest is Currently Checked In</span>
+          </>
+        )}
+      </div>
 
       {/* Date Info */}
       <div className="space-y-2 mb-4 text-sm text-gray-600">
@@ -123,75 +59,16 @@ export default function OwnerCheckInOutActions({ bookingId, status, checkInDate,
         </div>
       </div>
 
-      {/* Check In Section */}
-      {normalizedStatus === "confirmed" && (
-        <div>
-          {canCheckIn ? (
-            <button
-              onClick={handleCheckIn}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Checking In...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                  </svg>
-                  Check In Guest
-                </>
-              )}
-            </button>
-          ) : (
-            <div className="text-xs text-gray-500 text-center p-3 bg-gray-50 rounded-lg">
-              {today.getTime() < checkIn.getTime() 
-                ? `Check-in available on ${checkIn.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                : "Check-in date has passed"}
-            </div>
-          )}
+      {/* Info Message */}
+      <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
+        <svg className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div className="text-sm text-amber-700">
+          <p className="font-medium mb-1">Guest Self Check-In/Out Only</p>
+          <p className="text-xs text-amber-600">Guests will check themselves in and out on their scheduled dates.</p>
         </div>
-      )}
-
-      {/* Check Out Section */}
-      {normalizedStatus === "checked_in" && (
-        <div>
-          {canCheckOut ? (
-            <button
-              onClick={handleCheckOut}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Checking Out...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Check Out Guest
-                </>
-              )}
-            </button>
-          ) : (
-            <div className="text-xs text-gray-500 text-center p-3 bg-gray-50 rounded-lg">
-              Check-out date has passed
-            </div>
-          )}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
